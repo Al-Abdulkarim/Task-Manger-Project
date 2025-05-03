@@ -4,17 +4,29 @@ require_once 'db.php';
 // Function to register a new user
 function registerUser($username, $email, $password) {
     $conn = connectDB();
+
+    // 1. Check if username already exists
+    $check = $conn->prepare("SELECT id FROM users WHERE username = ?");
+    $check->bind_param("s", $username);
+    $check->execute();
+    $check->store_result();
+    if ($check->num_rows > 0) {
+        return false; // Username taken
+    }
+    $check->close();
+
+    // 2. Hash password and insert new user
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    
     $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
     if (!$stmt) return false;
-    
+
     $stmt->bind_param("sss", $username, $email, $hashed_password);
     $result = $stmt->execute();
     $stmt->close();
-    
+
     return $result;
 }
+
 
 // Function to authenticate a user
 function loginUser($username, $password) {
